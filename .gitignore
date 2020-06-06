@@ -1,0 +1,11 @@
+*.obj
+*.pch
+*.sbr
+*.ilk
+*.pdb
+*.sdf
+*.ipch
+/DVC60/
+/Debug/
+/ipch/
+
