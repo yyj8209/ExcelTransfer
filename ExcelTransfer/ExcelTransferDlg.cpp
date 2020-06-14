@@ -7,6 +7,7 @@
 #include "ExcelTransferDlg.h"
 #include "afxdialogex.h"
 
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -62,6 +63,13 @@ BEGIN_MESSAGE_MAP(CExcelTransferDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDC_BUTTON_IMPORT, &CExcelTransferDlg::OnClickedButtonImport)
+	ON_BN_CLICKED(IDC_BUTTON_DONE, &CExcelTransferDlg::OnClickedButtonDone)
+	ON_BN_CLICKED(IDC_BUTTON_SAMPLE, &CExcelTransferDlg::OnClickedButtonSample)
+	ON_BN_CLICKED(IDC_BUTTON_PREVIEW, &CExcelTransferDlg::OnClickedButtonPreview)
+	ON_BN_CLICKED(IDC_BUTTON_SAVE, &CExcelTransferDlg::OnClickedButtonSave)
+	ON_BN_CLICKED(IDC_BUTTON_DEL, &CExcelTransferDlg::OnClickedButtonDel)
+	ON_BN_CLICKED(IDC_BUTTON_ADD, &CExcelTransferDlg::OnClickedButtonAdd)
 END_MESSAGE_MAP()
 
 
@@ -150,3 +158,107 @@ HCURSOR CExcelTransferDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+
+
+void CExcelTransferDlg::OnClickedButtonImport()
+{
+	// TODO:  在此添加控件通知处理程序代码
+
+}
+
+
+void CExcelTransferDlg::OnClickedButtonDone()
+{
+	// TODO:  在此添加控件通知处理程序代码
+}
+
+
+void CExcelTransferDlg::OnClickedButtonSample()
+{
+	// TODO:  在此添加控件通知处理程序代码
+}
+
+
+void CExcelTransferDlg::OnClickedButtonPreview()
+{
+	// TODO:  在此添加控件通知处理程序代码
+}
+
+
+void CExcelTransferDlg::OnClickedButtonSave()
+{
+	// TODO:  在此添加控件通知处理程序代码
+}
+
+
+void CExcelTransferDlg::OnClickedButtonDel()
+{
+	// TODO:  在此添加控件通知处理程序代码
+}
+
+
+void CExcelTransferDlg::OnClickedButtonAdd()
+{
+	// TODO:  在此添加控件通知处理程序代码
+}
+
+void CExcelTransferDlg::ReadExcelFile()
+{
+	strExcleFilePath = strWorkDir + _T("\\ExcelTest.xlsx");  //exe所在路径当前路径下的Excel文件
+	CApplication app;
+	CWorkbooks books;
+	CWorkbook book;
+	CWorksheets sheets;
+	CWorksheet sheet;
+	CRange range;
+	LPDISPATCH lpDisp;
+	COleVariant vResult;
+	COleVariant
+		covTrue((short)TRUE),
+		covFalse((short)FALSE),
+		covOptional((long)DISP_E_PARAMNOTFOUND, VT_ERROR);
+	if (!app.CreateDispatch(_T("Excel.Application")))
+	{
+		MessageBox(_T("Error!Creat Excel Application Server Faile!"));
+	}
+	books = app.get_Workbooks();   //获取工作薄集合
+
+	lpDisp = books.Open(strExcleFilePath,
+		covOptional, covOptional, covOptional, covOptional,
+		covOptional, covOptional, covOptional, covOptional,
+		covOptional, covOptional, covOptional, covOptional,
+		covOptional, covOptional);
+	book.AttachDispatch(lpDisp);
+	//book = books.Add(covOptional); //获取当前工作薄,若使用此语句，则为新建一个EXCEL表
+	sheets = book.get_Worksheets(); //获取当前工作薄页的集合
+	sheet = sheets.get_Item(COleVariant((short)1)); //获取当前活动页,第一页sheet1
+
+	//1.获取数据1
+	range = sheet.get_Range(COleVariant(_T("A1")), COleVariant(_T("A1"))); //获取单元格
+	vResult = COleVariant(range.get_Value2());
+	strExcel1 = CString(vResult.bstrVal);
+
+	//1.获取数据2
+	range = sheet.get_Range(COleVariant(_T("B1")), COleVariant(_T("B1"))); //获取单元格
+	vResult = COleVariant(range.get_Value2());
+	strExcel2 = CString(vResult.bstrVal);
+	MessageBox(strExcel1);
+	MessageBox(strExcel2);
+
+	//释放各对象，注意其顺序，若不执行以下步骤，Excel进程无法退出，打开任务管理器将会看到残留进程
+	range.ReleaseDispatch();
+	sheet.ReleaseDispatch();
+	sheets.ReleaseDispatch();
+	book.ReleaseDispatch(); //释放当前工作薄
+	books.ReleaseDispatch(); //释放工作薄集
+	app.Quit(); //退出EXCEL程序
+	app.ReleaseDispatch(); //释放EXCEL程序
+}
+
+void CExcelTransferDlg::GetWorkDir()
+{
+	TCHAR pFileName[MAX_PATH];
+	GetCurrentDirectory(MAX_PATH, pFileName);
+	CString dir(pFileName);
+	strWorkDir = dir;
+}
