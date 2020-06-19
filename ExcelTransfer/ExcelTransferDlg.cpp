@@ -50,6 +50,7 @@ END_MESSAGE_MAP()
 
 CExcelTransferDlg::CExcelTransferDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CExcelTransferDlg::IDD, pParent)
+	, m_edInfo(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -57,6 +58,9 @@ CExcelTransferDlg::CExcelTransferDlg(CWnd* pParent /*=NULL*/)
 void CExcelTransferDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Text(pDX, IDC_EDIT, m_edInfo);
+	DDX_Control(pDX, IDC_LIST_SRC, m_listSrc);
+	DDX_Control(pDX, IDC_LIST_DEST, m_listDst);
 }
 
 BEGIN_MESSAGE_MAP(CExcelTransferDlg, CDialogEx)
@@ -105,6 +109,7 @@ BOOL CExcelTransferDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO:  在此添加额外的初始化代码
+	InitListCtrl();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -158,24 +163,52 @@ HCURSOR CExcelTransferDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+void CExcelTransferDlg::InitListCtrl()
+{
+	m_listSrc.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES); // 整行选择、网格线
+	m_listDst.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES); // 整行选择、网格线
+	m_listSrc.InsertColumn(0, _T("字段的信息"), LVCFMT_LEFT, 100);
+	m_listSrc.InsertItem(0,_T("字段的信息") );
+	m_listDst.InsertColumn(0, _T("字段的信息"), LVCFMT_LEFT, 100);
+	m_listDst.InsertColumn(1, _T("在新表的位置"), LVCFMT_LEFT, 100);
+
+}
 
 
 void CExcelTransferDlg::OnClickedButtonImport()
 {
 	// TODO:  在此添加控件通知处理程序代码
-
+	strSrcDir = GetWorkDir();
+	//GetDlgCtrl(IDC_EDIT)->
+	m_edInfo.Append(_T("源文件：") + strSrcDir);
+	m_edInfo.Append(_T("\r\n"));
+	UpdateData(false);
+	ShellExecute(NULL, "open", strSrcDir, NULL, NULL, SW_SHOWNORMAL); 
 }
 
 
 void CExcelTransferDlg::OnClickedButtonDone()
 {
 	// TODO:  在此添加控件通知处理程序代码
+	CString  strPathName;
+	GetModuleFileName(NULL, strPathName.GetBuffer(256), 256);
+	strPathName.ReleaseBuffer(256);
+	int nPos = strPathName.ReverseFind('\\');
+
+	if (strDstDir.IsEmpty())
+		strDstDir = strPathName.Left(nPos + 1);
 }
 
 
 void CExcelTransferDlg::OnClickedButtonSample()
 {
 	// TODO:  在此添加控件通知处理程序代码
+	strSmpDir = GetWorkDir();
+	//GetDlgCtrl(IDC_EDIT)->
+	m_edInfo.Append(_T("样本文件：") + strSmpDir);
+	m_edInfo.Append(_T("\r\n"));
+	UpdateData(false);
+	ShellExecute(NULL, "open", strSmpDir, NULL, NULL, SW_SHOWNORMAL);
 }
 
 
@@ -188,6 +221,39 @@ void CExcelTransferDlg::OnClickedButtonPreview()
 void CExcelTransferDlg::OnClickedButtonSave()
 {
 	// TODO:  在此添加控件通知处理程序代码
+	BROWSEINFO bi;
+	CHAR Buffer[MAX_PATH];
+
+	//初始化入口参数 bi
+	bi.hwndOwner = NULL;
+	bi.pidlRoot = NULL;
+	bi.pszDisplayName = (LPSTR)Buffer;
+	bi.lpszTitle = _T("文件夹路径选择");
+	bi.ulFlags = BIF_EDITBOX;
+	bi.lpfn = NULL;
+	bi.iImage = IDR_MAINFRAME;
+
+	LPITEMIDLIST pIDList = SHBrowseForFolder(&bi); //调用显示选择对话框 
+	//注意下 这个函数会分配内存 但不会释放 需要手动释放
+
+
+	if (pIDList)
+	{
+		SHGetPathFromIDList(pIDList, (LPSTR)Buffer);
+		strDstDir = Buffer;
+		//GamePath = Buffer; //将文件夹路径保存在CString 对象里面
+		//取得文件夹路径放置Buffer空间
+		//GUI_ShowMessage(true, Buffer);
+
+	}
+
+	CoTaskMemFree(pIDList); //释放pIDList所指向内存空间;
+	TRACE("%d", pIDList);
+
+	// 把变量内容更新到对话框
+	m_edInfo.Append(_T("输出文件目录：") + strDstDir);
+	m_edInfo.Append(_T("\r\n"));
+	UpdateData(false);
 }
 
 
@@ -204,7 +270,9 @@ void CExcelTransferDlg::OnClickedButtonAdd()
 
 void CExcelTransferDlg::ReadExcelFile()
 {
-	strExcleFilePath = strWorkDir + _T("\\ExcelTest.xlsx");  //exe所在路径当前路径下的Excel文件
+
+	strExcleFilePath = strSrcDir.Left(strSrcDir.ReverseFind('\\')) + _T("\\新站歌舞9家.xls");  //exe所在路径当前路径下的Excel文件
+	//strExcleFilePath = _T(".\\新站歌舞9家.xls");  //exe所在路径当前路径下的Excel文件
 	CApplication app;
 	CWorkbooks books;
 	CWorkbook book;
@@ -255,10 +323,16 @@ void CExcelTransferDlg::ReadExcelFile()
 	app.ReleaseDispatch(); //释放EXCEL程序
 }
 
-void CExcelTransferDlg::GetWorkDir()
+CString CExcelTransferDlg::GetWorkDir()
 {
-	TCHAR pFileName[MAX_PATH];
-	GetCurrentDirectory(MAX_PATH, pFileName);
-	CString dir(pFileName);
-	strWorkDir = dir;
+	CFileDialog dlg(TRUE, _T("Excel文件 (*.xls; *.xlsx)|*.xls; *.xlsx|"), NULL,
+		NULL, _T("Excel文件 (*.xls; *.xlsx)|*.xls; *.xlsx|"), NULL);
+	dlg.m_ofn.lpstrTitle = _T("选择源文件");
+	CString FileName = "";
+	if (dlg.DoModal() == IDOK)
+	{
+		POSITION fileNamesPosition = dlg.GetStartPosition();
+		FileName = dlg.GetPathName();
+	}
+	return FileName;
 }

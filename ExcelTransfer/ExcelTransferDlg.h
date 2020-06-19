@@ -3,15 +3,10 @@
 
 //
 #include "CApplication.h"
-
 #include "CWorkbooks.h"
-
 #include "CWorkbook.h"
-
 #include "CWorksheets.h"
-
 #include "CWorksheet.h"
-
 #include "CRange.h"
 
 #pragma once
@@ -51,10 +46,14 @@ public:
 	CString strINIFilePath;   //用于保存数据源INI文件路径
 	CString strExcleFilePath;  //用于保存数据源Excel文件路径
 	CString strOutputExcleFilePath;  //用于保存输出Excel文件路径
-	CString strWorkDir;     //用于保存exe所在路径
+	CString strSrcDir;     //源文件名
+	CString strSmpDir;     //样本文件名
+	CString strDstDir;
 public:
 	void ReadExcelFile();
-	void GetWorkDir();
+	CString GetWorkDir();
+	void InitListCtrl();
+
 public:
 	afx_msg void OnClickedButtonImport();
 	afx_msg void OnClickedButtonDone();
@@ -63,4 +62,6 @@ public:
 	afx_msg void OnClickedButtonSave();
 	afx_msg void OnClickedButtonDel();
 	afx_msg void OnClickedButtonAdd();
+	CString m_edInfo;
+	CListCtrl m_listSrc, m_listDst;
 };
