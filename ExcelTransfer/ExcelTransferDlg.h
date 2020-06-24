@@ -2,6 +2,7 @@
 // ExcelTransferDlg.h : 头文件
 
 //
+#include <afxdisp.h> 
 #include "CApplication.h"
 #include "CWorkbooks.h"
 #include "CWorkbook.h"
@@ -36,23 +37,36 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+
+
 public:
-	CString strINI1; //读取INI文件内容CString变量1
-	CString strINI2; //读取INI文件内容CString变量2
-	CString strINI3; //读取INI文件内容CString变量3
-	CString strINI4; //读取INI文件内容CString变量4
-	CString strExcel1; //读取Excel文件内容CString变量1
-	CString strExcel2; //读取Excel文件内容CString变量2
-	CString strINIFilePath;   //用于保存数据源INI文件路径
-	CString strExcleFilePath;  //用于保存数据源Excel文件路径
-	CString strOutputExcleFilePath;  //用于保存输出Excel文件路径
 	CString strSrcDir;     //源文件名
 	CString strSmpDir;     //样本文件名
-	CString strDstDir;
+	CString strDstDir;     // 保存目录
+
+	CApplication Application;            // Excel 应用程序接口
+	CWorkbook Workbook, Workbook1;                  // 工作簿
+	CWorkbooks Workbooks, Workbooks1;                // 工作簿集合
+	CWorksheets Worksheets, Worksheets1;              // 工作表集合
+	CWorksheet Worksheet, Worksheet1;
+	CRange Range, Range1;
+	LPDISPATCH lpDisp, lpDisp1;
+	COleVariant vResult, vResult1;
+
+	int Rows, Cols;   // for Excel
+	int Rows1, Cols1;   // for Excel
+	CString strCell;
+	int nRow, nCol;   // for List
+
 public:
-	void ReadExcelFile();
+	void ReadExcelFile(CString strExcleFilePath);
+	void WriteExcelFile(long Row, CString strExcleFilePath);
+	void WriteExcelFile();
 	CString GetWorkDir();
-	void InitListCtrl();
+	void InitUI();
+	void GetCells(long Col, long Row);
+	void Row2File(int Row, CString strDst);
+	void InsertCell(int Col, int Row, CString str);
 
 public:
 	afx_msg void OnClickedButtonImport();
@@ -63,5 +77,20 @@ public:
 	afx_msg void OnClickedButtonDel();
 	afx_msg void OnClickedButtonAdd();
 	CString m_edInfo;
-	CListCtrl m_listSrc, m_listDst;
+	CListCtrl m_listSrc;
+	CComboBox m_cbLeft;
+	CComboBox m_cbRight;
+	CComboBox m_cbTop;
+	CComboBox m_cbBottom;
+	CComboBox m_cbFilename1;
+	CComboBox m_cbFilename2;
+	CComboBox m_cbFieldRow;
+	CEdit m_edList;
+	afx_msg void OnSelchangeComboFieldrow();
+	afx_msg void OnDestroy();
+	afx_msg void OnDropdownComboFieldrow();
+
+	afx_msg void OnDblclkListSrc(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnKillfocusEditList();
+
 };
