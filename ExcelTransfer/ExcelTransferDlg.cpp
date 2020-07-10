@@ -52,9 +52,12 @@ END_MESSAGE_MAP()
 
 CExcelTransferDlg::CExcelTransferDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CExcelTransferDlg::IDD, pParent)
-	, m_edInfo(_T(""))
 	, Rows(0)
 	, Cols(0)
+	, m_editInfo(_T("【软件简介】\r\n功能：用来把excel数据批量导出到指定格式的表格。\r\n") \
+	_T("操作：1、导入数据表；2、选择样表；3、选择数据范围；\r\n") \
+	_T("         4、选择导出路径；5、在表格中编辑；6、批量生成\r\n") \
+	_T("-----------------------------------------------------------------------------\r\n"))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
@@ -63,17 +66,17 @@ CExcelTransferDlg::CExcelTransferDlg(CWnd* pParent /*=NULL*/)
 void CExcelTransferDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Text(pDX, IDC_EDIT, m_edInfo);
 	DDX_Control(pDX, IDC_LIST_SRC, m_listSrc);
 	DDX_Control(pDX, IDC_COMBO_LEFT, m_cbLeft);
-	DDX_Control(pDX, IDC_COMBO_RIGHT,m_cbRight);
+	DDX_Control(pDX, IDC_COMBO_RIGHT, m_cbRight);
 	DDX_Control(pDX, IDC_COMBO_TOP, m_cbTop);
 	DDX_Control(pDX, IDC_COMBO_BOTTOM, m_cbBottom);
 	DDX_Control(pDX, IDC_COMBO_FILENAME1, m_cbFilename1);
 	DDX_Control(pDX, IDC_COMBO_FILENAME2, m_cbFilename2);
 	DDX_Control(pDX, IDC_COMBO_FIELDROW, m_cbFieldRow);
 	DDX_Control(pDX, IDC_EDIT_LIST, m_edList);
-	
+
+	DDX_Text(pDX, IDC_EDIT_INFO, m_editInfo);
 }
 
 BEGIN_MESSAGE_MAP(CExcelTransferDlg, CDialogEx)
@@ -85,14 +88,12 @@ BEGIN_MESSAGE_MAP(CExcelTransferDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_SAMPLE, &CExcelTransferDlg::OnClickedButtonSample)
 	ON_BN_CLICKED(IDC_BUTTON_PREVIEW, &CExcelTransferDlg::OnClickedButtonPreview)
 	ON_BN_CLICKED(IDC_BUTTON_SAVE, &CExcelTransferDlg::OnClickedButtonSave)
-	ON_BN_CLICKED(IDC_BUTTON_DEL, &CExcelTransferDlg::OnClickedButtonDel)
-	ON_BN_CLICKED(IDC_BUTTON_ADD, &CExcelTransferDlg::OnClickedButtonAdd)
 	ON_CBN_SELCHANGE(IDC_COMBO_FIELDROW, &CExcelTransferDlg::OnSelchangeComboFieldrow)
 	ON_WM_DESTROY()
 	ON_CBN_DROPDOWN(IDC_COMBO_FIELDROW, &CExcelTransferDlg::OnDropdownComboFieldrow)
-
 	ON_NOTIFY(NM_DBLCLK, IDC_LIST_SRC, &CExcelTransferDlg::OnDblclkListSrc)
 	ON_EN_KILLFOCUS(IDC_EDIT_LIST, &CExcelTransferDlg::OnKillfocusEditList)
+	ON_BN_CLICKED(IDOK, &CExcelTransferDlg::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 
@@ -130,7 +131,7 @@ BOOL CExcelTransferDlg::OnInitDialog()
 	// TODO:  在此添加额外的初始化代码
 	InitUI(); 
 
-	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
+	return FALSE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
 void CExcelTransferDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -190,8 +191,23 @@ void CExcelTransferDlg::InitUI()
 	m_listSrc.InsertColumn(2, _T("填写到样本（行）"), LVCFMT_LEFT, 110);
 
 	m_edList.ShowWindow(SW_HIDE);
+
+	CButton *pBtn = (CButton *)GetDlgItem(IDC_BUTTON_IMPORT);
+	pBtn->SetFocus();
+
 }
 
+void CExcelTransferDlg::UpdateInfoEdit(CString strInfo)
+{
+	//m_editInfo.Append(strInfo);
+	//m_editInfo.Append(_T("\r\n"));
+	CEdit *pEdit = (CEdit *)GetDlgItem(IDC_EDIT_INFO);
+	int nLen = pEdit->GetWindowTextLength();
+	pEdit->SetSel(nLen, nLen, TRUE);
+	pEdit->ReplaceSel(strInfo + _T("\r\n"), FALSE);
+	//pEdit->LineScroll(pEdit->GetLineCount());
+	//UpdateData(false);
+}
 
 void CExcelTransferDlg::OnClickedButtonImport()
 {
@@ -200,32 +216,30 @@ void CExcelTransferDlg::OnClickedButtonImport()
 	if (strSrcDir.IsEmpty())
 		return;
 
-	m_edInfo.Append(_T("源文件：") + strSrcDir);
-	m_edInfo.Append(_T("\r\n"));
-	UpdateData(false);
-	ShellExecute(NULL, "open", strSrcDir, NULL, NULL, SW_SHOWNORMAL); 
+	UpdateInfoEdit(_T("源文件：") + strSrcDir);
+//	ShellExecute(NULL, "open", strSrcDir, NULL, NULL, SW_SHOWNOACTIVATE);
 
 	ReadExcelFile(strSrcDir);
 
 	for (int k = 0; k < Cols; k++)
 	{
 		CString sCol;
-		sCol.Format("%c",(int)'A' + k);
+		sCol.Format(_T("%c"),(int)'A' + k);
 		m_cbLeft.AddString(sCol);
 		m_cbRight.AddString(sCol);
 	}
 	for (int k = 0; k < Rows; k++)
 	{
 		CString sRow;
-		sRow.Format("%d",  k + 1);
+		sRow.Format(_T("%d"), k + 1);
 		m_cbTop.AddString(sRow);
 		m_cbBottom.AddString(sRow);
 		m_cbFieldRow.AddString(sRow);
 	}
 	m_cbLeft.SetCurSel(0);
 	m_cbTop.SetCurSel(0);
-	m_cbRight.SetCurSel(Rows - 1);
-	m_cbBottom.SetCurSel(Cols - 1);
+	m_cbRight.SetCurSel(Cols - 1);
+	m_cbBottom.SetCurSel(Rows - 1);
 	m_cbFieldRow.SetCurSel(0);
 
 }
@@ -241,6 +255,34 @@ void CExcelTransferDlg::OnClickedButtonDone()
 
 	if (strDstDir.IsEmpty())
 		strDstDir = strPathName.Left(nPos + 1);
+
+	int nStart = m_cbTop.GetCurSel() + 1;
+	int nStop  = m_cbBottom.GetCurSel() + 1;
+	CString sNum;
+	sNum.Format(_T("%d"), nStop - nStart + 1);
+	if (nStart > nStop)
+	{
+		AfxMessageBox(_T("结束行小于开始行，请重新选择数据范围。"), MB_OK | MB_ICONSTOP,NULL);
+		return;
+	}
+	CButton* pBtn = (CButton*)GetDlgItem(IDC_BUTTON_DONE);
+	pBtn->EnableWindow(false);
+	CTime startTime = GetCurrentTime();
+	for (int i = nStart; i <= nStop; i++)
+	{
+		CString strDstFile = GenDstFile(i);
+		WriteExcelFile((long)i, strDstFile);
+	}
+	CTime currentTime = GetCurrentTime();
+	CTimeSpan usedTime = currentTime - startTime;
+	CString Sec;
+	Sec.Format(_T("%.3f"),usedTime.GetTotalSeconds()/1000.0);
+	MessageBox(_T("生成 ") + sNum + _T(" 个文件。") + \
+		_T(" 共用时: ") +Sec +  _T(" 秒"));
+	pBtn->EnableWindow(true);
+
+	//ShellExecute(NULL, _T("explore"), strDstDir, NULL, NULL, SW_SHOW);
+
 }
 
 
@@ -250,10 +292,9 @@ void CExcelTransferDlg::OnClickedButtonSample()
 	strSmpDir = GetWorkDir();
 	if (strSmpDir.IsEmpty())
 		return;
-	m_edInfo.Append(_T("样本文件：") + strSmpDir);
-	m_edInfo.Append(_T("\r\n"));
-	UpdateData(false);
-	ShellExecute(NULL, "open", strSmpDir, NULL, NULL, SW_SHOWNORMAL);
+
+	UpdateInfoEdit(_T("样本文件：") + strSmpDir);
+//	ShellExecute(NULL, "open", strSmpDir, NULL, NULL, SW_SHOWNOACTIVATE);
 }
 
 
@@ -262,21 +303,26 @@ void CExcelTransferDlg::OnClickedButtonPreview()
 	// TODO:  在此添加控件通知处理程序代码
 	if (strDstDir.IsEmpty())
 		OnClickedButtonSave();
-	int m = m_cbFilename1.GetCurSel() + 1;
 	int n = m_cbTop.GetCurSel() + 1;
-	GetCells((long)m, (long)n);
-	CString strDstFile = strDstDir + "\\" + strCell;
-	m = m_cbFilename2.GetCurSel() + 1;
-	GetCells((long)m, (long)n);
-	strDstFile = strDstFile + "-" + strCell + ".xls";
-
-	CopyFile((LPCSTR)strSmpDir, (LPCSTR)strDstFile, true);
-//	WriteExcelFile();
+	CString strDstFile = GenDstFile(n);
 	WriteExcelFile((long)n, strDstFile);
-	ShellExecute(NULL, "open", strDstFile, NULL, NULL, SW_SHOWNORMAL);
+//	ShellExecute(NULL, "open", strDstFile, NULL, NULL, SW_SHOWNOACTIVATE);
 
 }
 
+CString CExcelTransferDlg::GenDstFile(int Row)
+{
+	int m = m_cbFilename1.GetCurSel() + 1;
+	GetCells((long)m, (long)Row);
+	CString strDstFile = strDstDir + "\\" + strCell;
+	m = m_cbFilename2.GetCurSel() + 1;
+	GetCells((long)m, (long)Row);
+	strDstFile = strDstFile + "-" + strCell + _T(".xls");
+	CopyFile((LPWSTR)strSmpDir.GetBuffer(strSmpDir.GetLength()), (LPWSTR)strDstFile.GetBuffer(strDstFile.GetLength()), true);
+	UpdateInfoEdit(_T("生成文件：") + strDstFile);
+	return strDstFile;
+
+}
 
 void CExcelTransferDlg::OnClickedButtonSave()
 {
@@ -287,7 +333,7 @@ void CExcelTransferDlg::OnClickedButtonSave()
 	//初始化入口参数 bi
 	bi.hwndOwner = NULL;
 	bi.pidlRoot = NULL;
-	bi.pszDisplayName = (LPSTR)Buffer;
+	bi.pszDisplayName = (LPWSTR)Buffer;
 	bi.lpszTitle = _T("请选择输出目录");
 	bi.ulFlags = BIF_EDITBOX;
 	bi.lpfn = NULL;
@@ -299,34 +345,22 @@ void CExcelTransferDlg::OnClickedButtonSave()
 
 	if (pIDList)
 	{
-		SHGetPathFromIDList(pIDList, (LPSTR)Buffer);
+		CString sBuf(Buffer);
+		SHGetPathFromIDList(pIDList, (LPWSTR)Buffer);   // sBuf.GetBuffer(sBuf.GetLength()));
 		strDstDir = Buffer;
 		//GamePath = Buffer; //将文件夹路径保存在CString 对象里面
 		//取得文件夹路径放置Buffer空间
 		//GUI_ShowMessage(true, Buffer);
 		// 把变量内容更新到对话框
-		m_edInfo.Append(_T("输出文件目录：") + strDstDir);
-		m_edInfo.Append(_T("\r\n"));
-		UpdateData(false);
+		UpdateInfoEdit(_T("输出文件目录：") + strDstDir);
 
 	}
 
 	CoTaskMemFree(pIDList); //释放pIDList所指向内存空间;
-	TRACE("%d", pIDList);
+	TRACE(_T("%d"), pIDList);
 
 }
 
-
-void CExcelTransferDlg::OnClickedButtonDel()
-{
-	// TODO:  在此添加控件通知处理程序代码
-}
-
-
-void CExcelTransferDlg::OnClickedButtonAdd()
-{
-	// TODO:  在此添加控件通知处理程序代码
-}
 
 // 源文件读取
 void CExcelTransferDlg::ReadExcelFile(CString strExcleFilePath)
@@ -334,37 +368,46 @@ void CExcelTransferDlg::ReadExcelFile(CString strExcleFilePath)
 
 	//strExcleFilePath = strSrcDir.Left(strSrcDir.ReverseFind('\\')) + _T("\\新站歌舞9家.xls");  //exe所在路径当前路径下的Excel文件
 	//strExcleFilePath = _T(".\\新站歌舞9家.xls");  //exe所在路径当前路径下的Excel文件
+	lpDisp = Application.DetachDispatch();    // 如果 excel已启动，则重新启动。
 	if (!Application.CreateDispatch(_T("Excel.Application")))
 	{
-		MessageBox(_T("Error!Creat Excel Application Server Faile!"));
+		MessageBox(_T("未找到Excel程序。"));
 	}
 	Workbooks = Application.get_Workbooks();   //获取工作薄集合
 	//COleVariant covTrue((short)TRUE);
 	//COleVariant covFalse((short)FALSE);
 	COleVariant covOptional((long)DISP_E_PARAMNOTFOUND, VT_ERROR);
 
-	lpDisp = Workbooks.Open(strExcleFilePath,
+	Workbook = Workbooks.Open(strExcleFilePath,
 		covOptional, covOptional, covOptional, covOptional,
 		covOptional, covOptional, covOptional, covOptional,
 		covOptional, covOptional, covOptional, covOptional,
 		covOptional, covOptional);
-	Workbook.AttachDispatch(lpDisp);
+	//Workbook.AttachDispatch(lpDisp);
 	//book = books.Add(covOptional); //获取当前工作薄,若使用此语句，则为新建一个EXCEL表
-	Worksheets.AttachDispatch(Workbook.get_Worksheets()); //获取当前工作薄页的集合
+	//Worksheets.AttachDispatch(Workbook.get_Worksheets()); //获取当前工作薄页的集合
+	Worksheets = Workbook.get_Worksheets(); //获取当前工作薄页的集合
+	Worksheet = Worksheets.get_Item(COleVariant(short(1)));
 	//得到当前活跃sheet
-	lpDisp = Workbook.get_ActiveSheet();
-	Worksheet.AttachDispatch(lpDisp);
+	//lpDisp2 = Workbook.get_ActiveSheet();
+	//Worksheet.AttachDispatch(lpDisp2);
 	//获得行数
 	CRange usedRange;
 	CRange mRange;
-	usedRange.AttachDispatch(Worksheet.get_UsedRange());
-	mRange.AttachDispatch(usedRange.get_Rows(), true);
+	usedRange = Worksheet.get_UsedRange();
+	mRange = usedRange.get_Rows();
 	Rows = mRange.get_Count();
-	mRange.AttachDispatch(usedRange.get_Columns(), true);
+	mRange = usedRange.get_Columns();
 	Cols = mRange.get_Count();
 
-	usedRange.ReleaseDispatch();
-	mRange.ReleaseDispatch();
+	//usedRange.ReleaseDispatch();
+	//mRange.ReleaseDispatch();
+	//释放各对象，注意其顺序，若不执行以下步骤，Excel进程无法退出，打开任务管理器将会看到残留进程
+	//Worksheet.ReleaseDispatch();
+	//Worksheets.ReleaseDispatch();
+	//Workbook.ReleaseDispatch(); //释放当前工作薄
+	//Workbooks.ReleaseDispatch(); //释放工作薄集
+
 }
 
 // 目标文件读取。
@@ -376,34 +419,30 @@ void CExcelTransferDlg::WriteExcelFile(long Row, CString strExcleFilePath)
 	//	MessageBox(_T("Error!Creat Excel Application Server Faile!"));
 	//}
 	Workbooks1 = Application.get_Workbooks();   //获取工作薄集合
+	//COleVariant covTrue((short)TRUE);
+	//COleVariant covFalse((short)FALSE);
 	COleVariant covOptional((long)DISP_E_PARAMNOTFOUND, VT_ERROR);
 
-	lpDisp1 = Workbooks1.Open(strExcleFilePath,
+	Workbook1 = Workbooks1.Open(strExcleFilePath,
 		covOptional, covOptional, covOptional, covOptional,
 		covOptional, covOptional, covOptional, covOptional,
 		covOptional, covOptional, covOptional, covOptional,
 		covOptional, covOptional);
-	Workbook1.AttachDispatch(lpDisp1);
+	//Workbook.AttachDispatch(lpDisp);
 	//book = books.Add(covOptional); //获取当前工作薄,若使用此语句，则为新建一个EXCEL表
-	Worksheets1.AttachDispatch(Workbook1.get_Worksheets()); //获取当前工作薄页的集合
-	//得到当前活跃sheet
-	lpDisp1 = Workbook1.get_ActiveSheet();
-	Worksheet1.AttachDispatch(lpDisp1);
-	
+	//Worksheets.AttachDispatch(Workbook.get_Worksheets()); //获取当前工作薄页的集合
+	Worksheets1 = Workbook1.get_Worksheets(); //获取当前工作薄页的集合
+	Worksheet1 = Worksheets1.get_Item(COleVariant(short(1)));
+
 	//将源文件第Row行的信息写入目标文件。
 	//Range1.AttachDispatch(Worksheet1.get_Cells());
 	for (int i = 0; i < Cols; i++)
 	{
 		if (m_listSrc.GetCheck(i))
 		{
-			int nRowDst, nColDst;
 			//CString sRow = m_listSrc.GetItemText(i, 2);
 			CString sRange = m_listSrc.GetItemText(i, 1) + m_listSrc.GetItemText(i, 2);
-			//char chCol[1];
-			//memcpy(chCol, sCol, 1);
-			//nRowDst = atoi(sRow);
-			//nColDst = int(sCol[0]) - int('A') + 1;  // 列与A的间距
-			GetCells((long)i, Row);
+			GetCells((long)i+1, Row);
 			//Range1.put_Item(COleVariant(long(nColDst)), COleVariant(long(nRowDst)), COleVariant(strCell));
 			Range1 = Worksheet1.get_Range(COleVariant(sRange), COleVariant(sRange));
 			Range1.put_Value2(COleVariant(strCell));
@@ -416,12 +455,12 @@ void CExcelTransferDlg::WriteExcelFile(long Row, CString strExcleFilePath)
 	Workbook1.put_Saved(true);
 	Application.put_DisplayAlerts(false);//关闭时不再谈出询问是否保存的对话框
 	Workbooks1.Close();
-	Range1.ReleaseDispatch();
-	Worksheet1.ReleaseDispatch();
-	Worksheets1.ReleaseDispatch();
-	Workbook1.ReleaseDispatch(); //释放当前工作薄
-	Workbooks1.ReleaseDispatch(); //释放工作薄集
-
+	//Range1.ReleaseDispatch();
+	//Worksheet1.ReleaseDispatch();
+	//Worksheets1.ReleaseDispatch();
+	//Workbook1.ReleaseDispatch(); //释放当前工作薄
+	//Workbooks1.ReleaseDispatch(); //释放工作薄集
+	// https://www.cnblogs.com/enjoyzhao/articles/5233348.html 这是官方推荐的使用方法。还是靠这个解决问题。
 	//————————————————
 	//	版权声明：本文为CSDN博主「liji_digital」的原创文章，遵循CC 4.0 BY - SA版权协议，转载请附上原文出处链接及本声明。
 	//原文链接：https ://blog.csdn.net/liji_digital/article/details/82320287
@@ -432,7 +471,7 @@ CString CExcelTransferDlg::GetWorkDir()
 	CFileDialog dlg(TRUE, _T("Excel文件 (*.xls; *.xlsx)|*.xls; *.xlsx|"), NULL,
 		NULL, _T("Excel文件 (*.xls; *.xlsx)|*.xls; *.xlsx|"), NULL);
 	dlg.m_ofn.lpstrTitle = _T("选择源文件");
-	CString FileName = "";
+	CString FileName = _T("");
 	if (dlg.DoModal() == IDOK)
 	{
 		POSITION fileNamesPosition = dlg.GetStartPosition();
@@ -467,7 +506,7 @@ void CExcelTransferDlg::OnDropdownComboFieldrow()
 	// TODO:  在此添加控件通知处理程序代码
 	if (m_cbFieldRow.GetCount() < 1)
 	{
-		this->MessageBox("请选择数据表。");
+		this->MessageBox(_T("请选择数据表。"));
 		return;
 	}
 }
@@ -478,37 +517,59 @@ void CExcelTransferDlg::OnDestroy()
 
 	// TODO:  在此处添加消息处理程序代码
 	//释放各对象，注意其顺序，若不执行以下步骤，Excel进程无法退出，打开任务管理器将会看到残留进程
-	Range.ReleaseDispatch();
-	Worksheet.ReleaseDispatch();
-	Worksheets.ReleaseDispatch();
-	Workbook.ReleaseDispatch(); //释放当前工作薄
-	Workbooks.ReleaseDispatch(); //释放工作薄集
+	//Range.ReleaseDispatch();
+	//Worksheet.ReleaseDispatch();
+	//Worksheets.ReleaseDispatch();
+	//Workbook.ReleaseDispatch(); //释放当前工作薄
+	//Workbooks.ReleaseDispatch(); //释放工作薄集
 	Application.Quit(); //退出EXCEL程序
 	Application.ReleaseDispatch(); //释放EXCEL程序
 
 }
 
+// 读取指定单元格的数据
 void CExcelTransferDlg::GetCells(long Col, long Row)
 {
 	// 读取指定单元格的数据
-	Range.AttachDispatch(Worksheet.get_Cells());
-	Range.AttachDispatch(Range.get_Item(COleVariant(Row), COleVariant(Col)).pdispVal);
+	Workbooks = Application.get_Workbooks();   //获取工作薄集合
+	//COleVariant covTrue((short)TRUE);
+	//COleVariant covFalse((short)FALSE);
+	COleVariant covOptional((long)DISP_E_PARAMNOTFOUND, VT_ERROR);
+
+	Workbook = Workbooks.Open(strSrcDir,
+		covOptional, covOptional, covOptional, covOptional,
+		covOptional, covOptional, covOptional, covOptional,
+		covOptional, covOptional, covOptional, covOptional,
+		covOptional, covOptional);
+
+	Worksheets = Workbook.get_Worksheets(); //获取当前工作薄页的集合
+	Worksheet = Worksheets.get_Item(COleVariant(short(1)));	CString sRow;
+	sRow.Format(_T("%d"), Row);
+	char chCol = (int)Col + int('A') -1;  // 列与A的间距
+	CString sCol(chCol);
+	//Range.AttachDispatch(Range.get_Item(COleVariant(Col), COleVariant(Row)).pdispVal, true);
+	//Range.ReleaseDispatch();
+	Range = Worksheet.get_Range(COleVariant(sCol + sRow), COleVariant(sCol + sRow));
 	vResult = Range.get_Value2();
 	if (vResult.vt == VT_BSTR){
 		strCell = vResult.bstrVal;
 	}
 	else if (vResult.vt == VT_R8){
-		strCell.Format("%d", vResult.dblVal);
+		strCell.Format(_T("%d"), (int)vResult.dblVal);
 	}
 	else{
-		strCell = "数据错误!";
+		strCell = _T("");
 		//this->MessageBox(strCell+"，请重新选择。");
 		//return;
 	}
+	//释放各对象，注意其顺序，若不执行以下步骤，Excel进程无法退出，打开任务管理器将会看到残留进程
+	//Range.ReleaseDispatch();
+	//Worksheet.ReleaseDispatch();
+	//Worksheets.ReleaseDispatch();
+	//Workbook.ReleaseDispatch(); //释放当前工作薄
+	//Workbooks.ReleaseDispatch(); //释放工作薄集
 
 }
-
-
 
 
 
@@ -547,12 +608,12 @@ void CExcelTransferDlg::OnKillfocusEditList()
 	case 1:
 		if (sCell.GetLength() > 1)
 		{
-			MessageBox("输入不能超过一个字符。");
+			MessageBox(_T("输入不能超过一个字符。"));
 			sCell.Empty();
 		}
-		else if (sCell.Compare("z")>0 || sCell.Compare("A")<0)
+		else if (sCell.Compare(_T("z"))>0 || sCell.Compare(_T("A"))<0)
 		{
-			MessageBox("列号只支持输入 A~Z 之间的字符。");
+			MessageBox(_T("列号只支持输入 A~Z 之间的字符。"));
 			sCell.Empty();
 		}
 		sCell.MakeUpper();
@@ -560,23 +621,26 @@ void CExcelTransferDlg::OnKillfocusEditList()
 	case 2:
 		if (!(sCell.SpanIncluding(_T("0123456789")) == sCell))
 		{
-			MessageBox("行号只支持输入数字。");
+			MessageBox(_T("行号只支持输入数字。"));
 			sCell.Empty();
 		}
 		break;
 	default:
-		MessageBox("请点击正确的单元格。");
+		MessageBox(_T("请点击正确的单元格。"));
 
 	}
 	m_listSrc.SetItemText(nRow, nCol, sCell);   //设置编辑框的新内容  
 	m_edList.ShowWindow(SW_HIDE);                //应藏编辑框
 }
 
-void CExcelTransferDlg::Row2File(int Row, CString strDst)
-{
-}
-void CExcelTransferDlg::InsertCell(int Col, int Row, CString str)
-{
-}
 
 
+
+
+void CExcelTransferDlg::OnBnClickedOk()
+{
+	// TODO:  在此添加控件通知处理程序代码
+	if (MessageBox(_T("是否退出程序？"), _T("是否退出程序？"), MB_OKCANCEL | MB_ICONQUESTION) == IDCANCEL)
+		return;
+	CDialogEx::OnOK();
+}

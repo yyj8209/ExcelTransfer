@@ -50,7 +50,7 @@ public:
 	CWorksheets Worksheets, Worksheets1;              // 工作表集合
 	CWorksheet Worksheet, Worksheet1;
 	CRange Range, Range1;
-	LPDISPATCH lpDisp, lpDisp1;
+	LPDISPATCH lpDisp, lpDisp1, lpDisp2;
 	COleVariant vResult, vResult1;
 
 	int Rows, Cols;   // for Excel
@@ -65,8 +65,8 @@ public:
 	CString GetWorkDir();
 	void InitUI();
 	void GetCells(long Col, long Row);
-	void Row2File(int Row, CString strDst);
-	void InsertCell(int Col, int Row, CString str);
+	CString GenDstFile(int Row);
+	void UpdateInfoEdit(CString strInfo);
 
 public:
 	afx_msg void OnClickedButtonImport();
@@ -74,9 +74,8 @@ public:
 	afx_msg void OnClickedButtonSample();
 	afx_msg void OnClickedButtonPreview();
 	afx_msg void OnClickedButtonSave();
-	afx_msg void OnClickedButtonDel();
-	afx_msg void OnClickedButtonAdd();
-	CString m_edInfo;
+	CString m_editInfo;
+	CEdit m_edList;
 	CListCtrl m_listSrc;
 	CComboBox m_cbLeft;
 	CComboBox m_cbRight;
@@ -85,12 +84,11 @@ public:
 	CComboBox m_cbFilename1;
 	CComboBox m_cbFilename2;
 	CComboBox m_cbFieldRow;
-	CEdit m_edList;
 	afx_msg void OnSelchangeComboFieldrow();
 	afx_msg void OnDestroy();
 	afx_msg void OnDropdownComboFieldrow();
 
 	afx_msg void OnDblclkListSrc(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnKillfocusEditList();
-
+	afx_msg void OnBnClickedOk();
 };
